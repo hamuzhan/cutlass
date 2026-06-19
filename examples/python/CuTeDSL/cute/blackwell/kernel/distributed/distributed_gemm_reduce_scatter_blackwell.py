@@ -34,7 +34,10 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import cuda.bindings.driver as cuda
-from cuda.core.experimental import Device
+try:
+    from cuda.core import Device
+except ImportError:
+    from cuda.core.experimental import Device
 from cuda.pathfinder import load_nvidia_dynamic_lib
 
 import cutlass
@@ -1097,7 +1100,7 @@ class PersistentDenseGemmKernel:
             bSG_gC_partitioned = None
             tTR_gC_partitioned = None
             if cutlass.const_expr(self.use_tma_store):
-                tTR_rC = cute.make_fragment(tTR_rAcc.shape, self.c_dtype)
+                tTR_rC = cute.make_rmem_tensor(tTR_rAcc.shape, self.c_dtype)
                 tiled_copy_r2s, tRS_rC, tRS_sC = self.epilog_smem_copy_and_partition(
                     tiled_copy_t2r, tTR_rC, epi_tidx, sC
                 )
@@ -1573,7 +1576,7 @@ class PersistentDenseGemmKernel:
         # (T2R, T2R_M, T2R_N, EPI_M, EPI_N, RestM, RestN, RestL)
         tTR_gC = thr_copy_t2r.partition_D(gC_mnl_epi)
         # (T2R, T2R_M, T2R_N)
-        tTR_rAcc = cute.make_fragment(
+        tTR_rAcc = cute.make_rmem_tensor(
             tTR_gC[(None, None, None, 0, 0, 0, 0, 0)].shape, self.acc_dtype
         )
         return tiled_copy_t2r, tTR_tAcc, tTR_rAcc
@@ -1673,7 +1676,7 @@ class PersistentDenseGemmKernel:
             thr_copy_t2r = tiled_copy_t2r.get_slice(tidx)
             tTR_gC = thr_copy_t2r.partition_D(gC_epi)
             # (T2R, T2R_M, T2R_N)
-            tTR_rC = cute.make_fragment(
+            tTR_rC = cute.make_rmem_tensor(
                 tTR_gC[(None, None, None, 0, 0, 0, 0, 0)].shape, self.c_dtype
             )
             simt_atom = cute.make_copy_atom(cute.nvgpu.CopyUniversalOp(), self.c_dtype)
