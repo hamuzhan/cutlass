@@ -14,7 +14,7 @@ CUTLASS: open-source CUDA C++ template library and Python DSLs for high-performa
 - Always choose a focused `CUTLASS_NVCC_ARCHS` value for local CMake work. The default expands to every architecture supported by the detected CUDA toolkit and is slow.
 - Hopper and Blackwell accelerated kernels require suffixed architecture targets such as `90a`, `100a`, `100f`, or `120a`; `90`, `100`, and `120` are not substitutes.
 - Do not edit generated build outputs, generated manifests, or generated kernel lists under a CMake build tree.
-- Avoid broad formatting-only churn. This checkout has no repo-local `.clang-format`, ruff, mypy, or pre-commit config.
+- Avoid broad formatting-only churn. This checkout has no repo-local `.clang-format`, mypy, or pre-commit config; the only linter/formatter config is `[tool.ruff]` in `operators/pyproject.toml`, scoped to the Operator API Python code.
 - Keep changes focused on one concern. Split unrelated C++, Python, docs, generator, and test changes unless the user explicitly asks for a wider change.
 - Only commit, push, or create PRs when explicitly requested. Never add AI-tool attribution or co-author lines unless the user explicitly asks.
 
@@ -42,10 +42,12 @@ CUTLASS: open-source CUDA C++ template library and Python DSLs for high-performa
 | CuTe DSL editable install | `CUTLASS_IR_BUILD_DIR=build bash python/CuTeDSL/setup.sh --editable` |
 | CuTe DSL L0 tests | `pytest test/examples/CuTeDSL --test-level L0 --target-cc 90 --deselect-not-run` |
 | CuTe DSL exact runtime SM | `pytest test/examples/CuTeDSL --test-level L0 --runtime-sm 100f --deselect-not-run` |
+| Operator API install (PyTorch) | `pip install nvidia-cutlass-operators[torch]` |
+| Operator API tests | `cd operators && CUTLASS_OPERATORS_TEST_LEVEL=L0 pytest test/unit` |
 
 ## Installation & Build
 
-CUTLASS C++ requires CUDA Toolkit 11.4 or later, CMake 3.18+, a C++17-capable host compiler, and Python for CMake-time generator scripts. CUDA 12.8+ is preferred for Blackwell SM100/SM120 work, and CUDA 13.x is required for newer Blackwell-family targets described by the docs.
+CUTLASS C++ requires CUDA Toolkit 11.4 or later, CMake 3.19+ (top-level `cmake_minimum_required` is 3.19; some example-local lists still allow lower), a C++17-capable host compiler, and Python for CMake-time generator scripts. CUDA 12.8+ is preferred for Blackwell SM100/SM120 work, and CUDA 13.x is required for newer Blackwell-family targets described by the docs.
 
 Prefer out-of-tree builds from the repository root. Set `CUDACXX=${CUDA_INSTALL_PATH}/bin/nvcc` when the intended `nvcc` is not first on `PATH`.
 
@@ -69,6 +71,7 @@ Enable cuBLAS/cuDNN-backed checks only when the libraries are available: `-DCUTL
 | Profiler | Functional and performance profiling executable | `tools/profiler/` |
 | Utilities | Reference kernels, host/device utilities, test helpers | `tools/util/`, `test/utils/` |
 | Legacy Python interface | High-level Python API for emitting/running CUTLASS kernels | `python/cutlass_cppgen/` |
+| CUTLASS Operator API | Beta Python discover/compile/execute layer over CuTe DSL kernels (`nvidia-cutlass-operators`, `import cutlass.operators`) | `operators/`, `operators/cutlass/operators/`, `operators/test/`, `operators/examples/` |
 | Kernel generator Python | Enumerates and emits C++ profiler/library kernels | `python/cutlass_library/` |
 | PyCuTe | Python layout algebra utilities | `python/pycute/` |
 | CuTe DSL package | Python-native kernel DSL implementation | `python/CuTeDSL/cutlass/` |
@@ -206,6 +209,7 @@ The `gh` CLI uses `~/.config/gh` by default for authentication. Different GitHub
 | Test breadth | CMake | `CUTLASS_TEST_LEVEL=0|1|2`; level 0 is sanity, higher levels are larger |
 | Profiler tests | `tools/profiler/` | Require profiler/library enabled; verification providers may need cuBLAS/cuDNN |
 | Legacy Python tests | `test/python/` | `unittest` runners, not pytest |
+| Operator API tests | `operators/test/` | Pytest from `operators/`; breadth via `CUTLASS_OPERATORS_TEST_LEVEL={L0,L1,L2}`; integration and some unit tests need a CUDA GPU |
 | CuTe DSL tests | `test/examples/CuTeDSL/` | Pytest, CUDA GPU required, supports `--test-level`, `--target-cc`, `--runtime-sm`, `--deselect-not-run` |
 | CuTe DSL large cases | `test/examples/CuTeDSL/` | `large_case` tests are skipped unless `--only-large-case` is specified |
 | CI entry point | `.github/workflows/blossom-ci.yml` | Authorized `/bot run` comments or manual `workflow_dispatch`, not a normal push matrix |
@@ -231,11 +235,15 @@ GitHub Actions in this repo also handle issue triage, labels, stale issues, and 
 | CUTLASS 3.x GEMM API | `media/docs/cpp/gemm_api_3x.md` |
 | CuTe C++ quick start | `media/docs/cpp/cute/00_quickstart.md` |
 | Profiler | `media/docs/cpp/profiler.md` |
+| GEMM performance measurement | `media/docs/cpp/gemm_performance_measurement_methodology_guidelines.md` |
 | Kernel functionality | `media/docs/cpp/functionality.md` |
 | Blackwell functionality | `media/docs/cpp/blackwell_functionality.md` |
 | Pipeline utilities | `media/docs/cpp/pipeline.md` |
 | Heuristics | `media/docs/cpp/heuristics.md` |
 | Legacy Python packages | `python/README.md` |
+| CUTLASS Operator API overview | `media/docs/operators/overview.rst` |
+| CUTLASS Operator API reference | `media/docs/operators/api_reference/index.rst` |
+| CUTLASS Operator API tutorials | `media/docs/operators/tutorials/index.rst` |
 | CuTe DSL overview | `media/docs/pythonDSL/overview.rst` |
 | CuTe DSL quick start | `media/docs/pythonDSL/quick_start.rst` |
 | CuTe DSL naming conventions | `media/docs/pythonDSL/cute_dsl_general/naming_conventions.rst` |
